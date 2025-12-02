@@ -149,6 +149,15 @@ set(SHIM_HEADERS
     ${CMAKE_SOURCE_DIR}/../shim/event_shim.hpp
 )
 
+set(INTEGRATION_SOURCES
+    ${CMAKE_SOURCE_DIR}/../pc_integration/portapack_pc.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.cpp
+)
+
+set(INTEGRATION_HEADERS
+    ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.hpp
+)
+
 set(EMULATOR_SOURCES
     ${CMAKE_SOURCE_DIR}/main_pc.cpp
 )
@@ -161,6 +170,7 @@ add_executable(portapack_emulator
     ${EMULATOR_SOURCES}
     ${HAL_PC_SOURCES}
     ${SHIM_SOURCES}
+    ${INTEGRATION_SOURCES}
 )
 
 # ============================================================================
@@ -172,6 +182,7 @@ target_include_directories(portapack_emulator PRIVATE
     ${CMAKE_SOURCE_DIR}/..
     ${CMAKE_SOURCE_DIR}/../hal/interface
     ${CMAKE_SOURCE_DIR}/../hal/pc
+    ${CMAKE_SOURCE_DIR}/../pc_integration
     ${CMAKE_SOURCE_DIR}/../shim
     ${SDL2_INCLUDE_DIRS}
     ${PORTAUDIO_INCLUDE_DIRS}
