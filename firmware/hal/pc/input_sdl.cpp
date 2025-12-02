@@ -160,9 +160,6 @@ void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
         if (win_h <= 0) win_h = 320;
     }
 
-    // Debug: print raw values
-    std::cout << "DEBUG: raw=(" << event.x << "," << event.y << ") win=(" << win_w << "," << win_h << ")" << std::endl;
-
     // Scale from window coordinates to display coordinates (240x320)
     int16_t x = static_cast<int16_t>((event.x * 240) / win_w);
     int16_t y = static_cast<int16_t>((event.y * 320) / win_h);
