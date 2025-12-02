@@ -23,16 +23,20 @@
 #define __RF_SOAPYSDR_HPP__
 
 #include "../interface/hal_rf.hpp"
-#include <SoapySDR/Device.hpp>
-#include <SoapySDR/Formats.hpp>
-#include <SoapySDR/Types.hpp>
 #include <thread>
 #include <atomic>
 #include <mutex>
 #include <vector>
 
+#ifdef USE_SOAPYSDR
+#include <SoapySDR/Device.hpp>
+#include <SoapySDR/Formats.hpp>
+#include <SoapySDR/Types.hpp>
+#endif
+
 namespace hal {
 
+#ifdef USE_SOAPYSDR
 /**
  * @brief SoapySDR-based RF implementation for PC emulation.
  *
@@ -131,6 +135,7 @@ private:
     // State
     std::atomic<bool> initialized_{false};
 };
+#endif // USE_SOAPYSDR
 
 /**
  * @brief Mock RF implementation for testing without hardware.

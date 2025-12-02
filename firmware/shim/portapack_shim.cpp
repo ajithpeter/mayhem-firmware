@@ -95,6 +95,7 @@ bool init(const std::string& sdcard_path, bool use_real_sdr) {
     }
 
     // Initialize RF (optional - emulator works without hardware)
+#ifdef USE_SOAPYSDR
     if (use_real_sdr) {
         // Try to initialize real SDR
         hal::RFSoapySDR* real_sdr = new hal::RFSoapySDR();
@@ -108,6 +109,9 @@ bool init(const std::string& sdcard_path, bool use_real_sdr) {
             std::cout << "No SDR hardware found, using mock RF" << std::endl;
         }
     }
+#else
+    (void)use_real_sdr;  // Silence unused parameter warning
+#endif
 
     if (!rf_hal.init()) {
         std::cerr << "RF initialization failed" << std::endl;

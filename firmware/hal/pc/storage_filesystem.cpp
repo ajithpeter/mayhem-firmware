@@ -209,8 +209,29 @@ int64_t StorageFilesystem::seek(FileHandle handle, int64_t offset, SeekOrigin or
         case SeekOrigin::End:     dir = std::ios::end; break;
     }
 
-    it->second.stream.seekg(offset, dir);
-    it->second.stream.seekp(offset, dir);
+    // Only seek the appropriate pointer based on file mode to avoid
+    // double-seek issues with SeekOrigin::Current
+    switch (it->second.mode) {
+        case OpenMode::Read:
+            it->second.stream.seekg(offset, dir);
+            break;
+        case OpenMode::Write:
+        case OpenMode::Append:
+            it->second.stream.seekp(offset, dir);
+            break;
+        case OpenMode::ReadWrite:
+            // For read-write, sync both positions but use absolute positioning
+            // to avoid current-position issues
+            if (origin == SeekOrigin::Current) {
+                auto current_pos = it->second.stream.tellg();
+                it->second.stream.seekg(current_pos + offset, std::ios::beg);
+                it->second.stream.seekp(current_pos + offset, std::ios::beg);
+            } else {
+                it->second.stream.seekg(offset, dir);
+                it->second.stream.seekp(offset, dir);
+            }
+            break;
+    }
 
     return it->second.stream.tellg();
 }

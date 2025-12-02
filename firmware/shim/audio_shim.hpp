@@ -25,6 +25,7 @@
 #ifdef PORTAPACK_PC_EMULATOR
 
 #include <cstdint>
+#include <cstddef>
 
 namespace shim {
 namespace audio {

@@ -56,8 +56,13 @@ add_definitions(-DPORTAPACK_PC_EMULATOR=1)
 # Find Required Packages
 # ============================================================================
 
-# SDL2
-find_package(SDL2 REQUIRED)
+find_package(PkgConfig REQUIRED)
+
+# SDL2 - try pkg-config first, then fall back to find_package
+pkg_check_modules(SDL2 sdl2)
+if(NOT SDL2_FOUND)
+    find_package(SDL2 REQUIRED)
+endif()
 if(SDL2_FOUND)
     message(STATUS "Found SDL2: ${SDL2_VERSION}")
 else()
@@ -65,7 +70,6 @@ else()
 endif()
 
 # PortAudio
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(PORTAUDIO REQUIRED portaudio-2.0)
 if(PORTAUDIO_FOUND)
     message(STATUS "Found PortAudio: ${PORTAUDIO_VERSION}")
@@ -217,6 +221,96 @@ install(CODE "
     file(MAKE_DIRECTORY \${CMAKE_INSTALL_PREFIX}/share/portapack_emulator/sdcard/SCREENSHOTS)
     file(MAKE_DIRECTORY \${CMAKE_INSTALL_PREFIX}/share/portapack_emulator/sdcard/SETTINGS)
 ")
+
+# ============================================================================
+# Unit Tests
+# ============================================================================
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    # Use doctest from the main firmware test directory
+    set(DOCTEST_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../test/include)
+
+    # Common test sources (shared code compiled as a library)
+    add_library(pc_emulator_testlib STATIC
+        ${HAL_PC_SOURCES}
+        ${SHIM_SOURCES}
+    )
+
+    target_include_directories(pc_emulator_testlib PUBLIC
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/..
+        ${CMAKE_SOURCE_DIR}/../hal/interface
+        ${CMAKE_SOURCE_DIR}/../hal/pc
+        ${CMAKE_SOURCE_DIR}/../shim
+        ${SDL2_INCLUDE_DIRS}
+        ${PORTAUDIO_INCLUDE_DIRS}
+        ${DOCTEST_INCLUDE_DIR}
+    )
+
+    target_link_libraries(pc_emulator_testlib PUBLIC
+        ${SDL2_LIBRARIES}
+        ${PORTAUDIO_LIBRARIES}
+        pthread
+    )
+
+    if(SoapySDR_FOUND)
+        target_include_directories(pc_emulator_testlib PUBLIC ${SoapySDR_INCLUDE_DIRS})
+        target_link_libraries(pc_emulator_testlib PUBLIC ${SoapySDR_LIBRARIES})
+    endif()
+
+    # Test executables
+    set(TEST_SOURCES
+        ${CMAKE_SOURCE_DIR}/tests/test_main.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_hal_interfaces.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_display_sdl.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_audio_portaudio.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_rf_mock.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_input_sdl.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_storage_filesystem.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_time_system.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_baseband_emulator.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_shared_memory.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_receiver_model.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_transmitter_model.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_display.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_audio.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_shim_event.cpp
+        ${CMAKE_SOURCE_DIR}/tests/test_integration.cpp
+    )
+
+    add_executable(pc_emulator_tests EXCLUDE_FROM_ALL ${TEST_SOURCES})
+
+    target_include_directories(pc_emulator_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/..
+        ${CMAKE_SOURCE_DIR}/../hal/interface
+        ${CMAKE_SOURCE_DIR}/../hal/pc
+        ${CMAKE_SOURCE_DIR}/../shim
+        ${SDL2_INCLUDE_DIRS}
+        ${PORTAUDIO_INCLUDE_DIRS}
+        ${DOCTEST_INCLUDE_DIR}
+    )
+
+    target_link_libraries(pc_emulator_tests PRIVATE
+        pc_emulator_testlib
+    )
+
+    # Register tests with CTest
+    add_test(NAME pc_emulator_tests COMMAND pc_emulator_tests)
+
+    # Custom target to build and run tests
+    add_custom_target(build_pc_tests DEPENDS pc_emulator_tests)
+    add_custom_target(run_pc_tests
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+        DEPENDS pc_emulator_tests
+    )
+
+    message(STATUS "  Tests:          Enabled")
+else()
+    message(STATUS "  Tests:          Disabled (use -DBUILD_TESTS=ON)")
+endif()
 
 # ============================================================================
 # Build Summary

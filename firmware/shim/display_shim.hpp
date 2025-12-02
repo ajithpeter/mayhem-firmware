@@ -25,6 +25,7 @@
 #ifdef PORTAPACK_PC_EMULATOR
 
 #include <cstdint>
+#include <algorithm>
 
 // Forward declarations for UI types
 namespace ui {
@@ -37,6 +38,97 @@ namespace ui {
 namespace shim {
 
 /**
+ * @brief RGB Color structure for PC emulation.
+ */
+struct Color {
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+
+    constexpr Color() = default;
+    constexpr Color(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
+
+    // Convert to RGB565 format
+    constexpr uint16_t to_rgb565() const {
+        return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+    }
+
+    // Create from RGB565
+    static constexpr Color from_rgb565(uint16_t rgb565) {
+        return Color(
+            ((rgb565 >> 11) & 0x1F) << 3,
+            ((rgb565 >> 5) & 0x3F) << 2,
+            (rgb565 & 0x1F) << 3
+        );
+    }
+};
+
+/**
+ * @brief 2D Point structure.
+ */
+struct Point {
+    int16_t x = 0;
+    int16_t y = 0;
+
+    constexpr Point() = default;
+    constexpr Point(int16_t x_, int16_t y_) : x(x_), y(y_) {}
+
+    constexpr Point operator+(const Point& other) const {
+        return Point(x + other.x, y + other.y);
+    }
+
+    constexpr Point operator-(const Point& other) const {
+        return Point(x - other.x, y - other.y);
+    }
+
+    constexpr bool operator==(const Point& other) const {
+        return x == other.x && y == other.y;
+    }
+};
+
+/**
+ * @brief Size structure (width/height).
+ */
+struct Size {
+    int16_t width = 0;
+    int16_t height = 0;
+
+    constexpr Size() = default;
+    constexpr Size(int16_t w, int16_t h) : width(w), height(h) {}
+};
+
+/**
+ * @brief Rectangle structure.
+ */
+struct Rect {
+    int16_t x = 0;
+    int16_t y = 0;
+    int16_t width = 0;
+    int16_t height = 0;
+
+    constexpr Rect() = default;
+    constexpr Rect(int16_t x_, int16_t y_, int16_t w_, int16_t h_)
+        : x(x_), y(y_), width(w_), height(h_) {}
+    constexpr Rect(const Point& p, const Size& s)
+        : x(p.x), y(p.y), width(s.width), height(s.height) {}
+
+    constexpr int16_t right() const { return x + width; }
+    constexpr int16_t bottom() const { return y + height; }
+    constexpr Point location() const { return Point(x, y); }
+    constexpr Size size() const { return Size(width, height); }
+    constexpr bool is_empty() const { return width <= 0 || height <= 0; }
+
+    constexpr bool contains(const Point& p) const {
+        return p.x >= x && p.x < right() && p.y >= y && p.y < bottom();
+    }
+
+    constexpr bool intersects(const Rect& other) const {
+        return !(other.x >= right() || other.right() <= x ||
+                 other.y >= bottom() || other.bottom() <= y);
+    }
+};
+
+/**
  * @brief Display shim class that wraps the PC display HAL.
  *
  * This class provides the same interface as lcd::ILI9341
@@ -44,8 +136,10 @@ namespace shim {
  */
 class Display {
 public:
-    static constexpr int width() { return 240; }
-    static constexpr int height() { return 320; }
+    static constexpr int WIDTH = 240;
+    static constexpr int HEIGHT = 320;
+    static constexpr int width() { return WIDTH; }
+    static constexpr int height() { return HEIGHT; }
 
     Display() = default;
     ~Display() = default;
@@ -56,6 +150,7 @@ public:
 
     // Basic drawing
     void fill_rectangle(int x, int y, int w, int h, uint16_t color);
+    void fill_rectangle(int x, int y, int w, int h, const Color& color);
     void fill_rectangle(const ui::Rect& rect, const ui::Color& color);
     void draw_pixel(int x, int y, uint16_t color);
     void draw_pixel(const ui::Point& p, const ui::Color& color);

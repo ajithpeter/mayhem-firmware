@@ -90,6 +90,10 @@ void Display::fill_rectangle(int x, int y, int w, int h, uint16_t color) {
     portapack_shim::display_hal.fill_rectangle(x, y, w, h, color);
 }
 
+void Display::fill_rectangle(int x, int y, int w, int h, const Color& color) {
+    portapack_shim::display_hal.fill_rectangle(x, y, w, h, color.to_rgb565());
+}
+
 void Display::fill_rectangle(const ui::Rect& rect, const ui::Color& color) {
     fill_rectangle(rect.left(), rect.top(), rect.width(), rect.height(), color.v);
 }
