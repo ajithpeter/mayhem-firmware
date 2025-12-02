@@ -41,14 +41,14 @@ bool DisplaySDL::init() {
         return true;
     }
 
-    // Create window
+    // Create window (avoid ALLOW_HIGHDPI to keep coordinate mapping simple)
     window_ = SDL_CreateWindow(
         "PortaPack Mayhem Emulator",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI
+        SDL_WINDOW_SHOWN
     );
 
     if (!window_) {
