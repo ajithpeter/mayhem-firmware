@@ -8,7 +8,7 @@ A PC-based emulator for PortaPack Mayhem firmware development and testing.
 ```bash
 sudo apt update
 sudo apt install build-essential cmake pkg-config \
-    libsdl2-dev libportaudio-dev libsoapysdr-dev
+    libsdl2-dev portaudio19-dev libsoapysdr-dev
 ```
 
 ### Fedora
