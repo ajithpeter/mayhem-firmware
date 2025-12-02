@@ -150,16 +150,10 @@ void InputSDL::handle_key_event(const SDL_KeyboardEvent& event) {
 void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
     if (event.button != SDL_BUTTON_LEFT) return;
 
-    // Get actual window size to compute proper scale
-    SDL_Window* win = SDL_GetWindowFromID(event.windowID);
-    int win_w = 480, win_h = 640;  // Defaults
-    if (win) {
-        SDL_GetWindowSize(win, &win_w, &win_h);
-    }
-
-    // Scale from window coordinates to display coordinates (240x320)
-    int16_t x = static_cast<int16_t>((event.x * 240) / win_w);
-    int16_t y = static_cast<int16_t>((event.y * 320) / win_h);
+    // SDL_RenderSetLogicalSize already transforms coordinates to logical space
+    // Just clamp to display bounds
+    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x)));
+    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y)));
 
     bool pressed = (event.type == SDL_MOUSEBUTTONDOWN);
 
@@ -181,16 +175,10 @@ void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
 void InputSDL::handle_mouse_motion_event(const SDL_MouseMotionEvent& event) {
     if (!(event.state & SDL_BUTTON_LMASK)) return;  // Only track when button pressed
 
-    // Get actual window size to compute proper scale
-    SDL_Window* win = SDL_GetWindowFromID(event.windowID);
-    int win_w = 480, win_h = 640;  // Defaults
-    if (win) {
-        SDL_GetWindowSize(win, &win_w, &win_h);
-    }
-
-    // Scale from window coordinates to display coordinates (240x320)
-    int16_t x = static_cast<int16_t>((event.x * 240) / win_w);
-    int16_t y = static_cast<int16_t>((event.y * 320) / win_h);
+    // SDL_RenderSetLogicalSize already transforms coordinates to logical space
+    // Just clamp to display bounds
+    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x)));
+    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y)));
 
     std::lock_guard<std::mutex> lock(mutex_);
 
