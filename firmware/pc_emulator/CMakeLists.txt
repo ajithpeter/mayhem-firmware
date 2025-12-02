@@ -155,6 +155,8 @@ set(INTEGRATION_SOURCES
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/persistent_memory_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/ch.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/hal.cpp
 )
 
 set(INTEGRATION_HEADERS
@@ -162,6 +164,10 @@ set(INTEGRATION_HEADERS
     ${CMAKE_SOURCE_DIR}/../pc_integration/message_queue_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/portapack_pc.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/ch.h
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/hal.h
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/chprintf.h
 )
 
 set(EMULATOR_SOURCES
@@ -183,13 +189,18 @@ add_executable(portapack_emulator
 # Include Directories
 # ============================================================================
 
+# ChibiOS compatibility headers must come FIRST to override system ChibiOS
 target_include_directories(portapack_emulator PRIVATE
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/..
     ${CMAKE_SOURCE_DIR}/../hal/interface
     ${CMAKE_SOURCE_DIR}/../hal/pc
     ${CMAKE_SOURCE_DIR}/../pc_integration
     ${CMAKE_SOURCE_DIR}/../shim
+    ${CMAKE_SOURCE_DIR}/../common
+    ${CMAKE_SOURCE_DIR}/../application
+    ${CMAKE_SOURCE_DIR}/../application/ui
     ${SDL2_INCLUDE_DIRS}
     ${PORTAUDIO_INCLUDE_DIRS}
 )
