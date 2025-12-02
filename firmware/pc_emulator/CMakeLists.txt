@@ -152,10 +152,14 @@ set(SHIM_HEADERS
 set(INTEGRATION_SOURCES
     ${CMAKE_SOURCE_DIR}/../pc_integration/portapack_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/persistent_memory_pc.cpp
 )
 
 set(INTEGRATION_HEADERS
     ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/message_queue_pc.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.hpp
 )
 
 set(EMULATOR_SOURCES
