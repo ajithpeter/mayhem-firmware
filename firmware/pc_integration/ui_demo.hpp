@@ -365,6 +365,173 @@ private:
 };
 
 /**
+ * @brief Large frequency display widget with big digits.
+ */
+class BigFrequency : public Widget {
+public:
+    BigFrequency(const Rect& rect, int64_t initial_freq = 100000000);
+
+    void set_frequency(int64_t freq_hz);
+    int64_t frequency() const { return frequency_; }
+
+    void paint(Painter& painter) override;
+    bool on_encoder(int32_t delta) override;
+    bool on_key(KeyEvent key) override;
+
+    void set_step(int64_t step) { step_ = step; }
+    int64_t step() const { return step_; }
+
+    std::function<void(int64_t)> on_change;
+
+private:
+    int64_t frequency_;
+    int64_t step_ = 10000;  // 10 kHz default step
+    int selected_digit_ = 6;  // Which digit is selected for editing
+
+    void draw_big_digit(Painter& painter, int x, int y, char digit, const Color& fg, const Color& bg);
+};
+
+/**
+ * @brief RSSI signal strength meter widget.
+ */
+class RSSIMeter : public Widget {
+public:
+    RSSIMeter(const Rect& rect);
+
+    void set_value(int db);  // dB value (-120 to 0)
+    void set_max(int db) { max_db_ = db; set_dirty(); }
+
+    void paint(Painter& painter) override;
+
+private:
+    int current_db_ = -100;
+    int max_db_ = -100;
+    int peak_db_ = -120;
+    static constexpr int MIN_DB = -120;
+    static constexpr int MAX_DB = 0;
+
+    Color db_to_color(int db) const;
+};
+
+/**
+ * @brief Spectrum analyzer visualization widget.
+ */
+class SpectrumWidget : public Widget {
+public:
+    SpectrumWidget(const Rect& rect);
+
+    void set_data(const std::vector<uint8_t>& data);
+    void set_center_frequency(int64_t freq) { center_freq_ = freq; set_dirty(); }
+    void set_bandwidth(int64_t bw) { bandwidth_ = bw; set_dirty(); }
+
+    void paint(Painter& painter) override;
+
+    // Generate simulated spectrum data for demo
+    void generate_demo_data();
+
+private:
+    std::vector<uint8_t> spectrum_data_;
+    int64_t center_freq_ = 100000000;
+    int64_t bandwidth_ = 2000000;
+
+    Color amplitude_to_color(uint8_t amplitude) const;
+};
+
+/**
+ * @brief Waterfall display widget.
+ */
+class WaterfallWidget : public Widget {
+public:
+    WaterfallWidget(const Rect& rect);
+
+    void add_line(const std::vector<uint8_t>& data);
+    void set_center_frequency(int64_t freq) { center_freq_ = freq; }
+
+    void paint(Painter& painter) override;
+
+private:
+    std::vector<std::vector<uint8_t>> waterfall_data_;
+    int64_t center_freq_ = 100000000;
+    static constexpr size_t MAX_LINES = 100;
+
+    Color amplitude_to_color(uint8_t amplitude) const;
+};
+
+/**
+ * @brief Options field widget for selecting from a list.
+ */
+class OptionsField : public Widget {
+public:
+    using option_t = std::pair<std::string, int32_t>;
+
+    OptionsField(const Rect& rect, const std::vector<option_t>& options);
+
+    void set_selected_index(size_t index);
+    size_t selected_index() const { return selected_index_; }
+    int32_t selected_value() const;
+
+    void paint(Painter& painter) override;
+    bool on_key(KeyEvent key) override;
+    bool on_encoder(int32_t delta) override;
+
+    std::function<void(size_t, int32_t)> on_change;
+
+private:
+    std::vector<option_t> options_;
+    size_t selected_index_ = 0;
+};
+
+/**
+ * @brief Audio receiver app view with spectrum and controls.
+ */
+class AudioReceiverView : public View {
+public:
+    AudioReceiverView(NavigationView& nav);
+    std::string title() const override { return "Audio RX"; }
+
+    void paint(Painter& painter) override;
+    bool on_key(KeyEvent key) override;
+    bool on_encoder(int32_t delta) override;
+
+private:
+    NavigationView& nav_;
+    std::shared_ptr<BigFrequency> frequency_;
+    std::shared_ptr<RSSIMeter> rssi_;
+    std::shared_ptr<SpectrumWidget> spectrum_;
+    std::shared_ptr<WaterfallWidget> waterfall_;
+    std::shared_ptr<OptionsField> modulation_;
+    std::shared_ptr<OptionsField> bandwidth_;
+    std::shared_ptr<Text> mode_label_;
+    std::shared_ptr<Text> bw_label_;
+
+    int frame_counter_ = 0;
+    void update_demo_data();
+};
+
+/**
+ * @brief Spectrum analyzer app view.
+ */
+class SpectrumAnalyzerView : public View {
+public:
+    SpectrumAnalyzerView(NavigationView& nav);
+    std::string title() const override { return "Spectrum"; }
+
+    void paint(Painter& painter) override;
+    bool on_encoder(int32_t delta) override;
+
+private:
+    NavigationView& nav_;
+    std::shared_ptr<BigFrequency> frequency_;
+    std::shared_ptr<SpectrumWidget> spectrum_;
+    std::shared_ptr<WaterfallWidget> waterfall_;
+    std::shared_ptr<Text> span_label_;
+    std::shared_ptr<OptionsField> span_;
+
+    int frame_counter_ = 0;
+    void update_demo_data();
+};
+
+/**
  * @brief Status bar at top of screen.
  */
 class StatusBar : public Widget {

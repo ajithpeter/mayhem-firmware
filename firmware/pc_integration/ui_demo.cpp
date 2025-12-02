@@ -585,8 +585,11 @@ ReceiveMenuView::ReceiveMenuView(NavigationView& nav)
     add_child(title_text_);
 
     menu_ = std::make_shared<MenuView>(Rect{0, 36, 240, 280});
-    menu_->add_item({"Audio (NFM/AM/WFM)", colors::green, []() {
-        std::cout << "Selected: Audio Receiver" << std::endl;
+    menu_->add_item({"Audio (NFM/AM/WFM)", colors::green, [this]() {
+        nav_.push(std::make_shared<AudioReceiverView>(nav_));
+    }});
+    menu_->add_item({"Spectrum Analyzer", colors::cyan, [this]() {
+        nav_.push(std::make_shared<SpectrumAnalyzerView>(nav_));
     }});
     menu_->add_item({"ADS-B", colors::green, []() {
         std::cout << "Selected: ADS-B Receiver" << std::endl;
@@ -605,9 +608,6 @@ ReceiveMenuView::ReceiveMenuView(NavigationView& nav)
     }});
     menu_->add_item({"BLE RX", colors::green, []() {
         std::cout << "Selected: BLE Receiver" << std::endl;
-    }});
-    menu_->add_item({"Spectrum", colors::green, []() {
-        std::cout << "Selected: Spectrum Analyzer" << std::endl;
     }});
     add_child(menu_);
 }
@@ -704,6 +704,577 @@ AboutView::AboutView(NavigationView& nav)
     info_text_ = std::make_shared<Text>(Rect{10, 100, 220, 16}, "Press Back to return");
     info_text_->set_colors(colors::grey, colors::black);
     add_child(info_text_);
+}
+
+// ============================================================================
+// BigFrequency Widget
+// ============================================================================
+
+// Big digit font (16x24 pixels per digit)
+static const uint32_t big_digits[10][24] = {
+    // 0
+    {0x07E0, 0x1FF8, 0x3FFC, 0x781E, 0x700E, 0xE007, 0xE007, 0xE007, 0xE007, 0xE007, 0xE007, 0xE007,
+     0xE007, 0xE007, 0xE007, 0xE007, 0xE007, 0x700E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000},
+    // 1
+    {0x0380, 0x0780, 0x0F80, 0x1F80, 0x3B80, 0x7380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380,
+     0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x7FFE, 0x7FFE, 0x7FFE, 0x0000, 0x0000},
+    // 2
+    {0x0FF0, 0x3FFC, 0x783E, 0x600E, 0x0006, 0x0006, 0x000E, 0x001C, 0x0038, 0x0070, 0x00E0, 0x01C0,
+     0x0380, 0x0700, 0x0E00, 0x1C00, 0x3800, 0x7000, 0x7FFE, 0x7FFE, 0x7FFE, 0x7FFE, 0x0000, 0x0000},
+    // 3
+    {0x0FF0, 0x3FFC, 0x781E, 0x600E, 0x0006, 0x0006, 0x000E, 0x003C, 0x0FF0, 0x0FF0, 0x003C, 0x000E,
+     0x0006, 0x0006, 0x0006, 0x0006, 0x600E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000, 0x0000},
+    // 4
+    {0x0030, 0x0070, 0x00F0, 0x01F0, 0x03B0, 0x0730, 0x0E30, 0x1C30, 0x3830, 0x7030, 0xE030, 0xFFFF,
+     0xFFFF, 0xFFFF, 0x0030, 0x0030, 0x0030, 0x0030, 0x0030, 0x0030, 0x0030, 0x0000, 0x0000, 0x0000},
+    // 5
+    {0x7FFE, 0x7FFE, 0x7FFE, 0x7000, 0x7000, 0x7000, 0x7FE0, 0x7FF8, 0x7FFC, 0x001E, 0x0006, 0x0006,
+     0x0006, 0x0006, 0x0006, 0x0006, 0x600E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000, 0x0000},
+    // 6
+    {0x07E0, 0x1FF8, 0x3FFC, 0x781E, 0x7000, 0xE000, 0xE000, 0xE7E0, 0xEFF8, 0xFFFC, 0xF81E, 0xF00E,
+     0xE007, 0xE007, 0xE007, 0x700E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000, 0x0000, 0x0000},
+    // 7
+    {0x7FFE, 0x7FFE, 0x7FFE, 0x000E, 0x001C, 0x0038, 0x0070, 0x00E0, 0x01C0, 0x0380, 0x0700, 0x0700,
+     0x0700, 0x0700, 0x0700, 0x0700, 0x0700, 0x0700, 0x0700, 0x0700, 0x0700, 0x0000, 0x0000, 0x0000},
+    // 8
+    {0x07E0, 0x1FF8, 0x3FFC, 0x781E, 0x700E, 0x700E, 0x700E, 0x381C, 0x1FF8, 0x07E0, 0x1FF8, 0x381C,
+     0x700E, 0x700E, 0x700E, 0x700E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000, 0x0000, 0x0000},
+    // 9
+    {0x07E0, 0x1FF8, 0x3FFC, 0x781E, 0x700E, 0xE007, 0xE007, 0xE007, 0x700F, 0x781F, 0x3FFF, 0x1FF7,
+     0x07E7, 0x0007, 0x0007, 0x000E, 0x781E, 0x3FFC, 0x1FF8, 0x07E0, 0x0000, 0x0000, 0x0000, 0x0000},
+};
+
+BigFrequency::BigFrequency(const Rect& rect, int64_t initial_freq)
+    : Widget(rect), frequency_(initial_freq) {}
+
+void BigFrequency::set_frequency(int64_t freq_hz) {
+    if (freq_hz != frequency_) {
+        frequency_ = freq_hz;
+        set_dirty();
+        if (on_change) {
+            on_change(frequency_);
+        }
+    }
+}
+
+void BigFrequency::draw_big_digit(Painter& painter, int x, int y, char digit, const Color& fg, const Color& bg) {
+    if (digit < '0' || digit > '9') return;
+
+    int idx = digit - '0';
+    auto& disp = shim::get_display();
+    uint16_t fg_c = fg.to_rgb565();
+    uint16_t bg_c = bg.to_rgb565();
+
+    for (int row = 0; row < 20; row++) {
+        uint32_t bits = big_digits[idx][row];
+        for (int col = 0; col < 16; col++) {
+            bool set = (bits >> (15 - col)) & 1;
+            disp.draw_pixel(x + col, y + row, set ? fg_c : bg_c);
+        }
+    }
+}
+
+void BigFrequency::paint(Painter& painter) {
+    painter.fill_rect(bounds_, colors::black);
+
+    // Format frequency as XXX.XXX.XXX
+    char buf[16];
+    int mhz = static_cast<int>(frequency_ / 1000000);
+    int khz = static_cast<int>((frequency_ % 1000000) / 1000);
+    int hz = static_cast<int>(frequency_ % 1000);
+    snprintf(buf, sizeof(buf), "%3d.%03d.%03d", mhz, khz, hz);
+
+    // Draw digits with larger spacing
+    int x = bounds_.x + 4;
+    int y = bounds_.y + 4;
+    int digit_width = 14;
+    int dot_width = 6;
+
+    for (int i = 0; buf[i]; i++) {
+        Color fg = colors::green;
+        Color bg = colors::black;
+
+        // Highlight selected digit
+        if (has_focus() && i == selected_digit_) {
+            fg = colors::yellow;
+            bg = Color{32, 32, 0};
+        }
+
+        if (buf[i] == '.') {
+            painter.fill_rect(Rect{static_cast<int16_t>(x), static_cast<int16_t>(y + 16), 4, 4}, fg);
+            x += dot_width;
+        } else {
+            draw_big_digit(painter, x, y, buf[i], fg, bg);
+            x += digit_width;
+        }
+    }
+
+    // Draw step indicator
+    std::string step_str;
+    if (step_ >= 1000000) step_str = std::to_string(step_ / 1000000) + " MHz";
+    else if (step_ >= 1000) step_str = std::to_string(step_ / 1000) + " kHz";
+    else step_str = std::to_string(step_) + " Hz";
+
+    painter.draw_text(bounds_.x + 4, bounds_.y + bounds_.h - 10, "Step: " + step_str, colors::grey, colors::black);
+
+    clear_dirty();
+}
+
+bool BigFrequency::on_encoder(int32_t delta) {
+    set_frequency(frequency_ + delta * step_);
+    return true;
+}
+
+bool BigFrequency::on_key(KeyEvent key) {
+    switch (key) {
+        case KeyEvent::Left:
+            if (selected_digit_ > 0) {
+                selected_digit_--;
+                if (selected_digit_ == 3 || selected_digit_ == 7) selected_digit_--;  // Skip dots
+                set_dirty();
+            }
+            return true;
+        case KeyEvent::Right:
+            if (selected_digit_ < 10) {
+                selected_digit_++;
+                if (selected_digit_ == 3 || selected_digit_ == 7) selected_digit_++;
+                set_dirty();
+            }
+            return true;
+        case KeyEvent::Up:
+            set_frequency(frequency_ + step_);
+            return true;
+        case KeyEvent::Down:
+            set_frequency(frequency_ - step_);
+            return true;
+        case KeyEvent::Select:
+            // Cycle through step sizes
+            if (step_ >= 10000000) step_ = 1;
+            else step_ *= 10;
+            set_dirty();
+            return true;
+        default:
+            return false;
+    }
+}
+
+// ============================================================================
+// RSSIMeter Widget
+// ============================================================================
+
+RSSIMeter::RSSIMeter(const Rect& rect) : Widget(rect) {}
+
+void RSSIMeter::set_value(int db) {
+    current_db_ = std::max(MIN_DB, std::min(MAX_DB, db));
+    if (current_db_ > peak_db_) {
+        peak_db_ = current_db_;
+    }
+    set_dirty();
+}
+
+Color RSSIMeter::db_to_color(int db) const {
+    if (db >= -30) return colors::red;
+    if (db >= -50) return colors::yellow;
+    if (db >= -70) return colors::green;
+    return Color{0, 128, 0};  // Dark green
+}
+
+void RSSIMeter::paint(Painter& painter) {
+    painter.fill_rect(bounds_, colors::black);
+
+    // Draw border
+    painter.draw_rect(bounds_, colors::grey);
+
+    // Calculate bar width
+    int range = MAX_DB - MIN_DB;
+    int bar_width = bounds_.w - 4;
+    int current_width = ((current_db_ - MIN_DB) * bar_width) / range;
+    int peak_x = ((peak_db_ - MIN_DB) * bar_width) / range;
+
+    // Draw gradient bar
+    for (int x = 0; x < current_width; x++) {
+        int db_at_x = MIN_DB + (x * range) / bar_width;
+        Color c = db_to_color(db_at_x);
+        painter.draw_vline(bounds_.x + 2 + x, bounds_.y + 2, bounds_.h - 4, c);
+    }
+
+    // Draw peak marker
+    if (peak_x > 0 && peak_x < bar_width) {
+        painter.draw_vline(bounds_.x + 2 + peak_x, bounds_.y + 2, bounds_.h - 4, colors::white);
+    }
+
+    // Draw dB labels
+    painter.draw_text(bounds_.x + 2, bounds_.y + bounds_.h + 2,
+                      std::to_string(current_db_) + " dB", colors::green, colors::black);
+
+    clear_dirty();
+}
+
+// ============================================================================
+// SpectrumWidget
+// ============================================================================
+
+SpectrumWidget::SpectrumWidget(const Rect& rect) : Widget(rect) {
+    spectrum_data_.resize(rect.w, 0);
+}
+
+void SpectrumWidget::set_data(const std::vector<uint8_t>& data) {
+    spectrum_data_ = data;
+    if (spectrum_data_.size() != static_cast<size_t>(bounds_.w)) {
+        spectrum_data_.resize(bounds_.w, 0);
+    }
+    set_dirty();
+}
+
+Color SpectrumWidget::amplitude_to_color(uint8_t amplitude) const {
+    if (amplitude > 200) return colors::red;
+    if (amplitude > 150) return colors::yellow;
+    if (amplitude > 100) return colors::green;
+    if (amplitude > 50) return colors::cyan;
+    return colors::blue;
+}
+
+void SpectrumWidget::generate_demo_data() {
+    // Generate realistic-looking spectrum with noise floor and some signals
+    static int phase = 0;
+    phase++;
+
+    for (size_t i = 0; i < spectrum_data_.size(); i++) {
+        // Base noise floor around 30-50
+        int noise = 30 + (rand() % 20);
+
+        // Add some simulated signals
+        int center = bounds_.w / 2;
+        int dist = std::abs(static_cast<int>(i) - center);
+
+        // Main signal at center
+        if (dist < 10) {
+            noise += 150 - dist * 10;
+        }
+
+        // Side signals
+        if (std::abs(static_cast<int>(i) - center - 50) < 5) {
+            noise += 80;
+        }
+        if (std::abs(static_cast<int>(i) - center + 40) < 3) {
+            noise += 100;
+        }
+
+        // Animate slightly
+        noise += (rand() % 10) - 5;
+        noise = std::max(0, std::min(255, noise));
+
+        spectrum_data_[i] = static_cast<uint8_t>(noise);
+    }
+    set_dirty();
+}
+
+void SpectrumWidget::paint(Painter& painter) {
+    painter.fill_rect(bounds_, colors::black);
+
+    // Draw grid lines
+    for (int y = bounds_.h / 4; y < bounds_.h; y += bounds_.h / 4) {
+        for (int x = 0; x < bounds_.w; x += 4) {
+            shim::get_display().draw_pixel(bounds_.x + x, bounds_.y + y, colors::dark_grey.to_rgb565());
+        }
+    }
+
+    // Draw spectrum
+    for (size_t i = 0; i < spectrum_data_.size() && static_cast<int>(i) < bounds_.w; i++) {
+        int height = (spectrum_data_[i] * bounds_.h) / 256;
+        Color c = amplitude_to_color(spectrum_data_[i]);
+
+        for (int y = 0; y < height; y++) {
+            shim::get_display().draw_pixel(
+                bounds_.x + i,
+                bounds_.y + bounds_.h - 1 - y,
+                c.to_rgb565()
+            );
+        }
+    }
+
+    // Draw center frequency marker
+    painter.draw_vline(bounds_.x + bounds_.w / 2, bounds_.y, bounds_.h, Color{64, 64, 64});
+
+    clear_dirty();
+}
+
+// ============================================================================
+// WaterfallWidget
+// ============================================================================
+
+WaterfallWidget::WaterfallWidget(const Rect& rect) : Widget(rect) {}
+
+Color WaterfallWidget::amplitude_to_color(uint8_t amplitude) const {
+    // Blue -> Cyan -> Green -> Yellow -> Red
+    if (amplitude < 64) {
+        return Color{0, 0, static_cast<uint8_t>(amplitude * 4)};
+    } else if (amplitude < 128) {
+        return Color{0, static_cast<uint8_t>((amplitude - 64) * 4), 255};
+    } else if (amplitude < 192) {
+        return Color{0, 255, static_cast<uint8_t>(255 - (amplitude - 128) * 4)};
+    } else {
+        return Color{static_cast<uint8_t>((amplitude - 192) * 4), 255, 0};
+    }
+}
+
+void WaterfallWidget::add_line(const std::vector<uint8_t>& data) {
+    waterfall_data_.insert(waterfall_data_.begin(), data);
+    if (waterfall_data_.size() > MAX_LINES) {
+        waterfall_data_.pop_back();
+    }
+    set_dirty();
+}
+
+void WaterfallWidget::paint(Painter& painter) {
+    auto& disp = shim::get_display();
+
+    for (size_t row = 0; row < waterfall_data_.size() && static_cast<int>(row) < bounds_.h; row++) {
+        const auto& line = waterfall_data_[row];
+        for (size_t col = 0; col < line.size() && static_cast<int>(col) < bounds_.w; col++) {
+            Color c = amplitude_to_color(line[col]);
+            disp.draw_pixel(bounds_.x + col, bounds_.y + row, c.to_rgb565());
+        }
+    }
+
+    clear_dirty();
+}
+
+// ============================================================================
+// OptionsField Widget
+// ============================================================================
+
+OptionsField::OptionsField(const Rect& rect, const std::vector<option_t>& options)
+    : Widget(rect), options_(options) {}
+
+void OptionsField::set_selected_index(size_t index) {
+    if (index < options_.size() && index != selected_index_) {
+        selected_index_ = index;
+        set_dirty();
+        if (on_change) {
+            on_change(selected_index_, selected_value());
+        }
+    }
+}
+
+int32_t OptionsField::selected_value() const {
+    return selected_index_ < options_.size() ? options_[selected_index_].second : 0;
+}
+
+void OptionsField::paint(Painter& painter) {
+    Color bg = has_focus() ? colors::blue : colors::dark_grey;
+    Color fg = colors::white;
+
+    painter.fill_rect(bounds_, bg);
+    painter.draw_rect(bounds_, has_focus() ? colors::cyan : colors::grey);
+
+    if (selected_index_ < options_.size()) {
+        // Draw arrows
+        painter.draw_text(bounds_.x + 2, bounds_.y + 4, "<", fg, bg);
+        painter.draw_text(bounds_.x + bounds_.w - 10, bounds_.y + 4, ">", fg, bg);
+
+        // Draw option text centered
+        const auto& text = options_[selected_index_].first;
+        int text_x = bounds_.x + (bounds_.w - static_cast<int>(text.size()) * 8) / 2;
+        painter.draw_text(text_x, bounds_.y + 4, text, fg, bg);
+    }
+
+    clear_dirty();
+}
+
+bool OptionsField::on_key(KeyEvent key) {
+    switch (key) {
+        case KeyEvent::Left:
+            if (selected_index_ > 0) {
+                set_selected_index(selected_index_ - 1);
+            }
+            return true;
+        case KeyEvent::Right:
+            if (selected_index_ < options_.size() - 1) {
+                set_selected_index(selected_index_ + 1);
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool OptionsField::on_encoder(int32_t delta) {
+    if (delta > 0 && selected_index_ < options_.size() - 1) {
+        set_selected_index(selected_index_ + 1);
+    } else if (delta < 0 && selected_index_ > 0) {
+        set_selected_index(selected_index_ - 1);
+    }
+    return true;
+}
+
+// ============================================================================
+// AudioReceiverView
+// ============================================================================
+
+AudioReceiverView::AudioReceiverView(NavigationView& nav)
+    : View({0, 16, 240, 304}), nav_(nav)
+{
+    // Frequency display
+    frequency_ = std::make_shared<BigFrequency>(Rect{0, 16, 240, 36}, 100000000);
+    frequency_->on_change = [this](int64_t freq) {
+        shim::get_receiver_model().set_target_frequency(freq);
+        spectrum_->set_center_frequency(freq);
+    };
+    add_child(frequency_);
+
+    // RSSI meter
+    rssi_ = std::make_shared<RSSIMeter>(Rect{0, 56, 240, 16});
+    add_child(rssi_);
+
+    // Spectrum display
+    spectrum_ = std::make_shared<SpectrumWidget>(Rect{0, 76, 240, 60});
+    add_child(spectrum_);
+
+    // Waterfall display
+    waterfall_ = std::make_shared<WaterfallWidget>(Rect{0, 140, 240, 80});
+    add_child(waterfall_);
+
+    // Mode label and selector
+    mode_label_ = std::make_shared<Text>(Rect{4, 226, 40, 16}, "Mode:");
+    mode_label_->set_colors(colors::grey, colors::black);
+    add_child(mode_label_);
+
+    modulation_ = std::make_shared<OptionsField>(
+        Rect{48, 224, 80, 20},
+        std::vector<OptionsField::option_t>{
+            {"NFM", 0},
+            {"WFM", 1},
+            {"AM", 2},
+            {"USB", 3},
+            {"LSB", 4},
+        }
+    );
+    add_child(modulation_);
+
+    // Bandwidth label and selector
+    bw_label_ = std::make_shared<Text>(Rect{136, 226, 24, 16}, "BW:");
+    bw_label_->set_colors(colors::grey, colors::black);
+    add_child(bw_label_);
+
+    bandwidth_ = std::make_shared<OptionsField>(
+        Rect{160, 224, 76, 20},
+        std::vector<OptionsField::option_t>{
+            {"8.5k", 8500},
+            {"11k", 11000},
+            {"16k", 16000},
+            {"200k", 200000},
+        }
+    );
+    add_child(bandwidth_);
+}
+
+void AudioReceiverView::update_demo_data() {
+    // Update RSSI with random variation
+    int rssi_val = -60 + (rand() % 20) - 10;
+    rssi_->set_value(rssi_val);
+
+    // Generate demo spectrum
+    spectrum_->generate_demo_data();
+
+    // Copy spectrum to waterfall
+    std::vector<uint8_t> line(240);
+    for (int i = 0; i < 240; i++) {
+        line[i] = 30 + (rand() % 50);
+        // Add signal at center
+        int dist = std::abs(i - 120);
+        if (dist < 10) line[i] += 150 - dist * 10;
+    }
+    waterfall_->add_line(line);
+}
+
+void AudioReceiverView::paint(Painter& painter) {
+    frame_counter_++;
+    if (frame_counter_ % 3 == 0) {
+        update_demo_data();
+    }
+
+    View::paint(painter);
+}
+
+bool AudioReceiverView::on_key(KeyEvent key) {
+    if (View::on_key(key)) return true;
+
+    // If frequency has focus, let it handle Up/Down
+    if (frequency_->has_focus()) {
+        return frequency_->on_key(key);
+    }
+    return false;
+}
+
+bool AudioReceiverView::on_encoder(int32_t delta) {
+    // Always send encoder to frequency
+    return frequency_->on_encoder(delta);
+}
+
+// ============================================================================
+// SpectrumAnalyzerView
+// ============================================================================
+
+SpectrumAnalyzerView::SpectrumAnalyzerView(NavigationView& nav)
+    : View({0, 16, 240, 304}), nav_(nav)
+{
+    // Frequency display
+    frequency_ = std::make_shared<BigFrequency>(Rect{0, 16, 240, 36}, 100000000);
+    add_child(frequency_);
+
+    // Large spectrum display
+    spectrum_ = std::make_shared<SpectrumWidget>(Rect{0, 56, 240, 100});
+    add_child(spectrum_);
+
+    // Waterfall display
+    waterfall_ = std::make_shared<WaterfallWidget>(Rect{0, 160, 240, 100});
+    add_child(waterfall_);
+
+    // Span selector
+    span_label_ = std::make_shared<Text>(Rect{4, 266, 40, 16}, "Span:");
+    span_label_->set_colors(colors::grey, colors::black);
+    add_child(span_label_);
+
+    span_ = std::make_shared<OptionsField>(
+        Rect{48, 264, 100, 20},
+        std::vector<OptionsField::option_t>{
+            {"500 kHz", 500000},
+            {"1 MHz", 1000000},
+            {"2 MHz", 2000000},
+            {"5 MHz", 5000000},
+            {"10 MHz", 10000000},
+        }
+    );
+    span_->set_selected_index(2);  // Default to 2 MHz
+    add_child(span_);
+}
+
+void SpectrumAnalyzerView::update_demo_data() {
+    spectrum_->generate_demo_data();
+
+    std::vector<uint8_t> line(240);
+    for (int i = 0; i < 240; i++) {
+        line[i] = 20 + (rand() % 40);
+        int dist = std::abs(i - 120);
+        if (dist < 15) line[i] += 180 - dist * 10;
+        if (std::abs(i - 80) < 8) line[i] += 100;
+        if (std::abs(i - 180) < 5) line[i] += 120;
+    }
+    waterfall_->add_line(line);
+}
+
+void SpectrumAnalyzerView::paint(Painter& painter) {
+    frame_counter_++;
+    if (frame_counter_ % 2 == 0) {
+        update_demo_data();
+    }
+
+    View::paint(painter);
+}
+
+bool SpectrumAnalyzerView::on_encoder(int32_t delta) {
+    return frequency_->on_encoder(delta);
 }
 
 // ============================================================================
