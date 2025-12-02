@@ -35,6 +35,7 @@
 #include "transmitter_model_shim.hpp"
 #include "baseband_shim.hpp"
 #include "shared_memory_shim.hpp"
+#include "ui_demo.hpp"
 
 #include <iostream>
 #include <string>
@@ -60,6 +61,7 @@ void print_usage(const char* program_name) {
               << "\n"
               << "Options:\n"
               << "  -h, --help           Show this help message\n"
+              << "  -u, --ui             Run with menu-based UI demo\n"
               << "  -s, --sdcard PATH    Path to SD card directory (default: ./sdcard)\n"
               << "  -r, --real-sdr       Use real SDR hardware via SoapySDR\n"
               << "  -v, --verbose        Enable verbose logging\n"
@@ -74,7 +76,7 @@ void print_usage(const char* program_name) {
               << "  D                    DFU mode key\n"
               << "\n"
               << "Example:\n"
-              << "  " << program_name << " -s ~/portapack_sd -r\n"
+              << "  " << program_name << " --ui -s ~/portapack_sd\n"
               << std::endl;
 }
 
@@ -82,6 +84,7 @@ struct EmulatorConfig {
     std::string sdcard_path = "./sdcard";
     bool use_real_sdr = false;
     bool verbose = false;
+    bool ui_mode = false;  // Use menu-based UI demo
     int64_t initial_frequency = 100000000;  // 100 MHz
 };
 
@@ -100,6 +103,9 @@ bool parse_arguments(int argc, char* argv[], EmulatorConfig& config) {
                 std::cerr << "Error: --sdcard requires a path argument\n";
                 return false;
             }
+        }
+        else if (arg == "-u" || arg == "--ui") {
+            config.ui_mode = true;
         }
         else if (arg == "-r" || arg == "--real-sdr") {
             config.use_real_sdr = true;
@@ -322,6 +328,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "SD Card Path: " << config.sdcard_path << std::endl;
     std::cout << "SDR Mode: " << (config.use_real_sdr ? "Real Hardware" : "Mock/Simulated") << std::endl;
+    std::cout << "UI Mode: " << (config.ui_mode ? "Menu UI" : "Animation Demo") << std::endl;
     std::cout << "Initial Frequency: " << (config.initial_frequency / 1000000.0) << " MHz" << std::endl;
     std::cout << std::endl;
 
@@ -338,23 +345,32 @@ int main(int argc, char* argv[]) {
     // Set initial frequency
     shim::get_receiver_model().set_target_frequency(config.initial_frequency);
 
-    // Draw startup screen
-    draw_startup_screen();
+    if (config.ui_mode) {
+        // Run the menu-based UI demo
+        std::cout << "Starting UI demo...\n"
+                  << "Use arrow keys to navigate, Enter to select, Escape to go back.\n"
+                  << std::endl;
 
-    // Get the event dispatcher
-    auto& dispatcher = shim::get_event_dispatcher();
+        ui_demo::run_demo_ui();
+    } else {
+        // Draw startup screen and run animation demo
+        draw_startup_screen();
 
-    // Set up demo callbacks
-    run_demo_animation(dispatcher);
+        // Get the event dispatcher
+        auto& dispatcher = shim::get_event_dispatcher();
 
-    std::cout << "Starting event loop...\n"
-              << "Press ESC or close window to exit.\n"
-              << std::endl;
+        // Set up demo callbacks
+        run_demo_animation(dispatcher);
 
-    // Run the main event loop
-    // This blocks until stop is requested
-    while (g_running && !dispatcher.should_stop()) {
-        dispatcher.run();
+        std::cout << "Starting event loop...\n"
+                  << "Press ESC or close window to exit.\n"
+                  << std::endl;
+
+        // Run the main event loop
+        // This blocks until stop is requested
+        while (g_running && !dispatcher.should_stop()) {
+            dispatcher.run();
+        }
     }
 
     std::cout << "\nShutting down emulator..." << std::endl;

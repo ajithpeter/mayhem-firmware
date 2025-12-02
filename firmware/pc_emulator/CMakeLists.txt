@@ -154,12 +154,14 @@ set(INTEGRATION_SOURCES
     ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/persistent_memory_pc.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.cpp
 )
 
 set(INTEGRATION_HEADERS
     ${CMAKE_SOURCE_DIR}/../pc_integration/event_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/message_queue_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.hpp
 )
 
 set(EMULATOR_SOURCES
