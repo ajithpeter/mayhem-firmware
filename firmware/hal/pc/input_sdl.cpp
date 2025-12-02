@@ -150,10 +150,10 @@ void InputSDL::handle_key_event(const SDL_KeyboardEvent& event) {
 void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
     if (event.button != SDL_BUTTON_LEFT) return;
 
-    // SDL_RenderSetLogicalSize already transforms coordinates to logical space
-    // Just clamp to display bounds
-    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x)));
-    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y)));
+    // SDL gives coordinates at half scale due to window scaling
+    // Multiply by 2 and clamp to display bounds (240x320)
+    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x * 2)));
+    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y * 2)));
 
     bool pressed = (event.type == SDL_MOUSEBUTTONDOWN);
 
@@ -175,10 +175,10 @@ void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
 void InputSDL::handle_mouse_motion_event(const SDL_MouseMotionEvent& event) {
     if (!(event.state & SDL_BUTTON_LMASK)) return;  // Only track when button pressed
 
-    // SDL_RenderSetLogicalSize already transforms coordinates to logical space
-    // Just clamp to display bounds
-    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x)));
-    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y)));
+    // SDL gives coordinates at half scale due to window scaling
+    // Multiply by 2 and clamp to display bounds (240x320)
+    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x * 2)));
+    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y * 2)));
 
     std::lock_guard<std::mutex> lock(mutex_);
 
