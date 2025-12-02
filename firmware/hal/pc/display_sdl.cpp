@@ -91,8 +91,8 @@ bool DisplaySDL::init() {
         return false;
     }
 
-    // Set scaling mode
-    SDL_RenderSetLogicalSize(renderer_, WIDTH, HEIGHT);
+    // Don't use SDL_RenderSetLogicalSize - it causes coordinate issues
+    // We'll handle scaling manually in present()
 
     initialized_ = true;
     std::cout << "DisplaySDL initialized: " << WIDTH << "x" << HEIGHT

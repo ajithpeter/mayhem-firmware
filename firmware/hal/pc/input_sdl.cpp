@@ -150,10 +150,24 @@ void InputSDL::handle_key_event(const SDL_KeyboardEvent& event) {
 void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
     if (event.button != SDL_BUTTON_LEFT) return;
 
-    // SDL gives coordinates at half scale due to window scaling
-    // Multiply by 2 and clamp to display bounds (240x320)
-    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x * 2)));
-    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y * 2)));
+    // Get window size to compute proper scaling
+    SDL_Window* win = SDL_GetWindowFromID(event.windowID);
+    int win_w = 240, win_h = 320;  // Default to display size
+    if (win) {
+        SDL_GetWindowSize(win, &win_w, &win_h);
+        // Ensure we don't divide by zero
+        if (win_w <= 0) win_w = 240;
+        if (win_h <= 0) win_h = 320;
+    }
+
+    // Debug: print raw values
+    std::cout << "DEBUG: raw=(" << event.x << "," << event.y << ") win=(" << win_w << "," << win_h << ")" << std::endl;
+
+    // Scale from window coordinates to display coordinates (240x320)
+    int16_t x = static_cast<int16_t>((event.x * 240) / win_w);
+    int16_t y = static_cast<int16_t>((event.y * 320) / win_h);
+    x = std::max<int16_t>(0, std::min<int16_t>(239, x));
+    y = std::max<int16_t>(0, std::min<int16_t>(319, y));
 
     bool pressed = (event.type == SDL_MOUSEBUTTONDOWN);
 
@@ -175,10 +189,20 @@ void InputSDL::handle_mouse_button_event(const SDL_MouseButtonEvent& event) {
 void InputSDL::handle_mouse_motion_event(const SDL_MouseMotionEvent& event) {
     if (!(event.state & SDL_BUTTON_LMASK)) return;  // Only track when button pressed
 
-    // SDL gives coordinates at half scale due to window scaling
-    // Multiply by 2 and clamp to display bounds (240x320)
-    int16_t x = static_cast<int16_t>(std::max(0, std::min(239, event.x * 2)));
-    int16_t y = static_cast<int16_t>(std::max(0, std::min(319, event.y * 2)));
+    // Get window size to compute proper scaling
+    SDL_Window* win = SDL_GetWindowFromID(event.windowID);
+    int win_w = 240, win_h = 320;
+    if (win) {
+        SDL_GetWindowSize(win, &win_w, &win_h);
+        if (win_w <= 0) win_w = 240;
+        if (win_h <= 0) win_h = 320;
+    }
+
+    // Scale from window coordinates to display coordinates (240x320)
+    int16_t x = static_cast<int16_t>((event.x * 240) / win_w);
+    int16_t y = static_cast<int16_t>((event.y * 320) / win_h);
+    x = std::max<int16_t>(0, std::min<int16_t>(239, x));
+    y = std::max<int16_t>(0, std::min<int16_t>(319, y));
 
     std::lock_guard<std::mutex> lock(mutex_);
 
