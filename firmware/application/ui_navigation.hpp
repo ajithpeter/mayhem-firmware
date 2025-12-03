@@ -25,6 +25,11 @@
 #ifndef __UI_NAVIGATION_H__
 #define __UI_NAVIGATION_H__
 
+#ifdef PORTAPACK_PC_EMULATOR
+// Use PC-compatible NavigationView
+#include "ui_navigation_pc.hpp"
+#else
+
 #include <vector>
 #include <map>
 #include <utility>
@@ -503,5 +508,7 @@ class ModalMessageView : public View {
 };
 
 } /* namespace ui */
+
+#endif /* !PORTAPACK_PC_EMULATOR */
 
 #endif /*__UI_NAVIGATION_H__*/

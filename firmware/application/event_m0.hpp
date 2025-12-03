@@ -22,6 +22,27 @@
 #ifndef __EVENT_M0_H__
 #define __EVENT_M0_H__
 
+#ifdef PORTAPACK_PC_EMULATOR
+// PC-compatible stub for MessageHandlerRegistration
+#include "message.hpp"
+#include <functional>
+
+class MessageHandlerRegistration {
+public:
+    MessageHandlerRegistration(
+        const Message::ID message_id,
+        std::function<void(Message* const p)>&& callback)
+        : message_id(message_id) {
+        (void)callback;  // Not used in PC emulator
+    }
+    ~MessageHandlerRegistration() {}
+private:
+    const Message::ID message_id;
+};
+
+#else
+// Real firmware implementation
+
 #include "event.hpp"
 
 #include "ui_widget.hpp"
@@ -155,5 +176,7 @@ class MessageHandlerRegistration {
    private:
     const Message::ID message_id;
 };
+
+#endif /* !PORTAPACK_PC_EMULATOR */
 
 #endif /*__EVENT_M0_H__*/

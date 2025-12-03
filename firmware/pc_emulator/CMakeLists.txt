@@ -188,8 +188,14 @@ set(PORTAPACK_UI_SOURCES
     ${CMAKE_SOURCE_DIR}/../common/utility.cpp
     ${CMAKE_SOURCE_DIR}/../application/ui/ui_font_fixed_5x8.cpp
     ${CMAKE_SOURCE_DIR}/../application/ui/ui_font_fixed_8x16.cpp
+    ${CMAKE_SOURCE_DIR}/../application/ui/ui_menu.cpp
     ${CMAKE_SOURCE_DIR}/../application/string_format.cpp
     ${CMAKE_SOURCE_DIR}/../application/theme.cpp
+)
+
+# Real PortaPack Apps
+set(PORTAPACK_APP_SOURCES
+    ${CMAKE_SOURCE_DIR}/../application/apps/ui_about_simple.cpp
 )
 
 set(EMULATOR_SOURCES
@@ -206,6 +212,7 @@ add_executable(portapack_emulator
     ${SHIM_SOURCES}
     ${INTEGRATION_SOURCES}
     ${PORTAPACK_UI_SOURCES}
+    ${PORTAPACK_APP_SOURCES}
 )
 
 # ============================================================================
