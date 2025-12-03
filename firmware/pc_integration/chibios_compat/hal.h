@@ -20,6 +20,110 @@ extern "C" {
 #endif
 
 /* ============================================================================
+ * ChibiOS HAL Stream/Queue Types
+ * ============================================================================ */
+
+/* Base asynchronous channel methods structure (stub) */
+#define _base_asynchronous_channel_methods \
+    void (*putt)(void *instance); \
+    void (*gett)(void *instance);
+
+/* Input/Output queue structures (minimal stubs) */
+typedef struct {
+    uint8_t* q_buffer;
+    size_t q_size;
+    size_t q_counter;
+} InputQueue;
+
+typedef struct {
+    uint8_t* q_buffer;
+    size_t q_size;
+    size_t q_counter;
+} OutputQueue;
+
+/* ============================================================================
+ * I2C Types
+ * ============================================================================ */
+
+typedef uint8_t i2caddr_t;
+typedef uint32_t i2cflags_t;
+
+typedef struct {
+    uint32_t dummy;
+} I2CConfig;
+
+typedef struct {
+    uint32_t state;
+    const I2CConfig* config;
+} I2CDriver;
+
+/* ============================================================================
+ * SPI Types
+ * ============================================================================ */
+
+typedef struct {
+    uint32_t dummy;
+} SPIConfig;
+
+typedef struct {
+    uint32_t state;
+    const SPIConfig* config;
+} SPIDriver;
+
+/* SPI function stubs */
+static inline void spiStart(SPIDriver* driver, const SPIConfig* config) {
+    (void)driver; (void)config;
+}
+static inline void spiStop(SPIDriver* driver) { (void)driver; }
+static inline void spiAcquireBus(SPIDriver* driver) { (void)driver; }
+static inline void spiReleaseBus(SPIDriver* driver) { (void)driver; }
+static inline void spiSelect(SPIDriver* driver) { (void)driver; }
+static inline void spiUnselect(SPIDriver* driver) { (void)driver; }
+static inline void spiExchange(SPIDriver* driver, size_t count, void* txbuf, void* rxbuf) {
+    (void)driver; (void)count; (void)txbuf; (void)rxbuf;
+}
+
+/* ============================================================================
+ * GPIO/PAL Types and Functions
+ * ============================================================================ */
+
+typedef uint32_t ioportid_t;
+typedef uint32_t iopadid_t;
+typedef uint32_t ioportmask_t;
+
+#define PAL_MODE_OUTPUT_PUSHPULL 0
+#define PAL_MODE_INPUT 1
+
+static inline void palSetPad(ioportid_t port, iopadid_t pad) {
+    (void)port; (void)pad;
+}
+static inline void palClearPad(ioportid_t port, iopadid_t pad) {
+    (void)port; (void)pad;
+}
+static inline void palTogglePad(ioportid_t port, iopadid_t pad) {
+    (void)port; (void)pad;
+}
+static inline void palSetPadMode(ioportid_t port, iopadid_t pad, uint32_t mode) {
+    (void)port; (void)pad; (void)mode;
+}
+static inline void palWritePad(ioportid_t port, iopadid_t pad, uint32_t bit) {
+    (void)port; (void)pad; (void)bit;
+}
+static inline uint32_t palReadPad(ioportid_t port, iopadid_t pad) {
+    (void)port; (void)pad;
+    return 0;
+}
+
+/* HAL delay function */
+static inline void halPolledDelay(uint32_t ticks) { (void)ticks; }
+
+/* Timestamp type used by baseband */
+typedef struct {
+    uint32_t tv_sec;
+    uint32_t tv_usec;
+} Timestamp;
+
+/* ============================================================================
  * RTC Types
  * ============================================================================ */
 
@@ -326,8 +430,26 @@ typedef struct {
     volatile uint32_t AYEAR;
 } LPC_RTC_Type;
 
+/* GPIO port type */
+typedef struct {
+    volatile uint32_t DIR[8];
+    volatile uint32_t RESERVED0[24];
+    volatile uint32_t MASK[8];
+    volatile uint32_t RESERVED1[24];
+    volatile uint32_t PIN[8];
+    volatile uint32_t RESERVED2[24];
+    volatile uint32_t MPIN[8];
+    volatile uint32_t RESERVED3[24];
+    volatile uint32_t SET[8];
+    volatile uint32_t RESERVED4[24];
+    volatile uint32_t CLR[8];
+    volatile uint32_t RESERVED5[24];
+    volatile uint32_t NOT[8];
+} LPC_GPIO_Type;
+
 /* Global register pointers - these would be memory-mapped on real hardware */
 /* For PC emulator, these are just static instances */
+extern LPC_GPIO_Type* LPC_GPIO;
 extern LPC_CREG_Type* LPC_CREG;
 extern LPC_CGU_Type* LPC_CGU;
 extern LPC_CCU1_Type* LPC_CCU1;
@@ -342,6 +464,12 @@ extern LPC_RTC_Type* LPC_RTC;
 /* ARM intrinsics stubs */
 static inline uint32_t __get_APSR(void) { return 0; }
 static inline void __SEV(void) {}
+static inline void __DMB(void) {}  /* Data Memory Barrier */
+static inline void __DSB(void) {}  /* Data Synchronization Barrier */
+static inline void __ISB(void) {}  /* Instruction Synchronization Barrier */
+static inline void __WFI(void) {}  /* Wait For Interrupt */
+static inline void __WFE(void) {}  /* Wait For Event */
+static inline void __NOP(void) {}  /* No Operation */
 
 /* NVIC stubs */
 #define CORTEX_PRIORITY_MASK(x) (x)

@@ -23,6 +23,11 @@
 #ifndef __LCD_ILI9341_H__
 #define __LCD_ILI9341_H__
 
+#ifdef PORTAPACK_PC_EMULATOR
+// Use PC-compatible display implementation
+#include "lcd_ili9341_pc.hpp"
+#else
+
 #include "ui.hpp"
 #include "ui_text.hpp"
 #include "file.hpp"
@@ -168,5 +173,7 @@ class ILI9341 {
 };
 
 } /* namespace lcd */
+
+#endif /* !PORTAPACK_PC_EMULATOR */
 
 #endif /*__LCD_ILI9341_H__*/

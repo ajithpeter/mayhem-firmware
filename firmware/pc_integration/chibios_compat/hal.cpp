@@ -11,6 +11,7 @@
 #include "hal.h"
 
 // Static instances of LPC43xx register structures
+static LPC_GPIO_Type lpc_gpio_instance = {};
 static LPC_CREG_Type lpc_creg_instance = {};
 static LPC_CGU_Type lpc_cgu_instance = {};
 static LPC_CCU1_Type lpc_ccu1_instance = {};
@@ -23,6 +24,7 @@ static LPC_SPIFI_Type lpc_spifi_instance = {};
 static LPC_RTC_Type lpc_rtc_instance = {};
 
 // Global pointers to register structures
+LPC_GPIO_Type* LPC_GPIO = &lpc_gpio_instance;
 LPC_CREG_Type* LPC_CREG = &lpc_creg_instance;
 LPC_CGU_Type* LPC_CGU = &lpc_cgu_instance;
 LPC_CCU1_Type* LPC_CCU1 = &lpc_ccu1_instance;

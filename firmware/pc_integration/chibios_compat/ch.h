@@ -276,11 +276,12 @@ static inline void chDbgPanic(const char* msg) {
     abort();
 }
 
-static inline void chDbgAssert(bool condition, const char* msg) {
-    if (!condition) {
-        chDbgPanic(msg);
-    }
-}
+// Use a variadic macro to support both 2 and 3 argument versions
+#define chDbgAssert(condition, ...) do { \
+    if (!(condition)) { \
+        chDbgPanic("assertion failed"); \
+    } \
+} while(0)
 
 /* ============================================================================
  * Event Types and Functions

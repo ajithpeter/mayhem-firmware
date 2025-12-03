@@ -23,6 +23,180 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 
+#ifdef PORTAPACK_PC_EMULATOR
+// On PC, use real std::filesystem and provide stub file operations
+#include <filesystem>
+#include "ff.h"
+#include "optional.hpp"
+#include "result.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <array>
+#include <fstream>
+
+// PC-compatible error type (not in std::filesystem to avoid conflicts)
+struct FileError {
+    constexpr FileError() = default;
+    constexpr FileError(FRESULT fatfs_error) : err_{fatfs_error} {}
+    constexpr FileError(unsigned int other_error) : err_{other_error} {}
+    uint32_t code() const { return err_; }
+    std::string what() const { return "filesystem error"; }
+    bool ok() const { return err_ == FR_OK; }
+private:
+    uint32_t err_{FR_OK};
+};
+
+// File class stub for PC - just enough to compile
+class File {
+public:
+    using Size = uint64_t;
+    using Offset = uint64_t;
+    using Error = FileError;
+
+    template<typename T>
+    struct Result {
+        T value_;
+        Error error_;
+        bool is_ok() const { return error_.ok(); }
+        operator bool() const { return is_ok(); }
+        T value() const { return value_; }
+        Error error() const { return error_; }
+    };
+
+    File() = default;
+    ~File() = default;
+
+    Result<Size> open(const std::filesystem::path& filename, bool readonly = true, bool create = false) {
+        (void)filename; (void)readonly; (void)create;
+        return Result<Size>{0, Error{FR_OK}};
+    }
+
+    Result<Size> append(const std::filesystem::path& filename) {
+        (void)filename;
+        return Result<Size>{0, Error{FR_OK}};
+    }
+
+    Result<Size> create(const std::filesystem::path& filename) {
+        return open(filename, false, true);
+    }
+
+    Result<Size> read(void* data, Size bytes_to_read) {
+        (void)data; (void)bytes_to_read;
+        return Result<Size>{0, Error{FR_OK}};
+    }
+
+    Result<Size> write(const void* data, Size bytes_to_write) {
+        (void)data; (void)bytes_to_write;
+        return Result<Size>{bytes_to_write, Error{FR_OK}};
+    }
+
+    Result<Offset> seek(uint64_t offset) {
+        (void)offset;
+        return Result<Offset>{offset, Error{FR_OK}};
+    }
+
+    Result<Offset> tell() const {
+        return Result<Offset>{0, Error{FR_OK}};
+    }
+
+    template<size_t N>
+    Result<Size> write(const std::array<uint8_t, N>& data) {
+        return write(data.data(), N);
+    }
+
+    Result<Size> puts(const std::string& str) {
+        return write(str.data(), str.size());
+    }
+
+    Result<std::string> gets(size_t max_length) {
+        (void)max_length;
+        return Result<std::string>{"", Error{FR_OK}};
+    }
+
+    Result<Size> size() const {
+        return Result<Size>{0, Error{FR_OK}};
+    }
+
+    static Result<std::string> read_file(const std::filesystem::path& filename) {
+        (void)filename;
+        return Result<std::string>{"", Error{FR_OK}};
+    }
+
+    bool sync() { return true; }
+    bool is_open() const { return false; }
+};
+
+inline bool file_exists(const std::filesystem::path& path) {
+    return std::filesystem::exists(path);
+}
+
+inline bool is_directory(const std::filesystem::path& path) {
+    return std::filesystem::is_directory(path);
+}
+
+inline FileError make_new_directory(const std::filesystem::path& path) {
+    try {
+        std::filesystem::create_directories(path);
+        return FileError{FR_OK};
+    } catch (...) {
+        return FileError{FR_DISK_ERR};
+    }
+}
+
+inline FileError delete_file(const std::filesystem::path& path) {
+    try {
+        std::filesystem::remove(path);
+        return FileError{FR_OK};
+    } catch (...) {
+        return FileError{FR_DISK_ERR};
+    }
+}
+
+inline FileError rename_file(const std::filesystem::path& old_path, const std::filesystem::path& new_path) {
+    try {
+        std::filesystem::rename(old_path, new_path);
+        return FileError{FR_OK};
+    } catch (...) {
+        return FileError{FR_DISK_ERR};
+    }
+}
+
+inline FileError copy_file(const std::filesystem::path& old_path, const std::filesystem::path& new_path) {
+    try {
+        std::filesystem::copy_file(old_path, new_path);
+        return FileError{FR_OK};
+    } catch (...) {
+        return FileError{FR_DISK_ERR};
+    }
+}
+
+// Stub for getting next filename
+template<typename T>
+std::filesystem::path next_filename_matching_pattern(const std::filesystem::path& folder, const T& pattern) {
+    (void)folder; (void)pattern;
+    return folder / "file.txt";
+}
+
+// FAT timestamp for PC
+struct FATTimestamp {
+    uint16_t FAT_date{0};
+    uint16_t FAT_time{0};
+};
+
+inline FATTimestamp file_created_date(const std::filesystem::path& file_path) {
+    (void)file_path;
+    return FATTimestamp{};
+}
+
+inline FileError file_update_date(const std::filesystem::path& file_path, FATTimestamp timestamp) {
+    (void)file_path; (void)timestamp;
+    return FileError{FR_OK};
+}
+
+#else
+// Original embedded firmware code
+
 #include "ff.h"
 
 #include "optional.hpp"
@@ -364,5 +538,7 @@ class File {
 
     Optional<Error> open_fatfs(const std::filesystem::path& filename, BYTE mode);
 };
+
+#endif /* !PORTAPACK_PC_EMULATOR */
 
 #endif /*__FILE_H__*/

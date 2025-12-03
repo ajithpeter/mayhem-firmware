@@ -155,8 +155,11 @@ set(INTEGRATION_SOURCES
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/persistent_memory_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/lcd_ili9341_pc.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/hardware_stubs_pc.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/ch.cpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/hal.cpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/ff.cpp
 )
 
 set(INTEGRATION_HEADERS
@@ -165,9 +168,28 @@ set(INTEGRATION_HEADERS
     ${CMAKE_SOURCE_DIR}/../pc_integration/shared_memory_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/ui_demo.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/portapack_pc.hpp
+    ${CMAKE_SOURCE_DIR}/../pc_integration/lcd_ili9341_pc.hpp
     ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/ch.h
     ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/hal.h
     ${CMAKE_SOURCE_DIR}/../pc_integration/chibios_compat/chprintf.h
+)
+
+# ============================================================================
+# Real PortaPack UI Sources (from firmware/common and firmware/application)
+# ============================================================================
+
+set(PORTAPACK_UI_SOURCES
+    ${CMAKE_SOURCE_DIR}/../common/ui.cpp
+    ${CMAKE_SOURCE_DIR}/../common/ui_text.cpp
+    ${CMAKE_SOURCE_DIR}/../common/ui_widget.cpp
+    ${CMAKE_SOURCE_DIR}/../common/ui_painter.cpp
+    ${CMAKE_SOURCE_DIR}/../common/ui_focus.cpp
+    ${CMAKE_SOURCE_DIR}/../common/ui_language.cpp
+    ${CMAKE_SOURCE_DIR}/../common/utility.cpp
+    ${CMAKE_SOURCE_DIR}/../application/ui/ui_font_fixed_5x8.cpp
+    ${CMAKE_SOURCE_DIR}/../application/ui/ui_font_fixed_8x16.cpp
+    ${CMAKE_SOURCE_DIR}/../application/string_format.cpp
+    ${CMAKE_SOURCE_DIR}/../application/theme.cpp
 )
 
 set(EMULATOR_SOURCES
@@ -183,6 +205,7 @@ add_executable(portapack_emulator
     ${HAL_PC_SOURCES}
     ${SHIM_SOURCES}
     ${INTEGRATION_SOURCES}
+    ${PORTAPACK_UI_SOURCES}
 )
 
 # ============================================================================
@@ -201,6 +224,9 @@ target_include_directories(portapack_emulator PRIVATE
     ${CMAKE_SOURCE_DIR}/../common
     ${CMAKE_SOURCE_DIR}/../application
     ${CMAKE_SOURCE_DIR}/../application/ui
+    ${CMAKE_SOURCE_DIR}/../application/hw
+    ${CMAKE_SOURCE_DIR}/../application/protocols
+    ${CMAKE_SOURCE_DIR}/../application/apps
     ${SDL2_INCLUDE_DIRS}
     ${PORTAUDIO_INCLUDE_DIRS}
 )

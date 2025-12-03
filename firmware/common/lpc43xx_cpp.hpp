@@ -49,6 +49,7 @@ static inline void clear_flag_saturation() {
 
 namespace creg {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_CREG_Type, CREG0) == 0x004, "CREG0 offset wrong");
 static_assert(offsetof(LPC_CREG_Type, M4MEMMAP) == 0x100, "M4MEMMAP offset wrong");
 static_assert(offsetof(LPC_CREG_Type, CREG5) == 0x118, "CREG5 offset wrong");
@@ -57,6 +58,7 @@ static_assert(offsetof(LPC_CREG_Type, M0SUBMEMMAP) == 0x308, "M0SUBMEMMAP offset
 static_assert(offsetof(LPC_CREG_Type, M0APPTXEVENT) == 0x400, "M0APPTXEVENT offset wrong");
 static_assert(offsetof(LPC_CREG_Type, USB0FLADJ) == 0x500, "USB0FLADJ offset wrong");
 static_assert(offsetof(LPC_CREG_Type, USB1FLADJ) == 0x600, "USB1FLADJ offset wrong");
+#endif
 
 namespace m4txevent {
 
@@ -265,7 +267,9 @@ inline bool is_locked() {
 
 namespace ccu1 {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_CCU1_Type, CLK_ADCHS_STAT) == 0xb04, "CLK_ADCHS_STAT offset wrong");
+#endif
 
 } /* namespace ccu1 */
 
@@ -357,11 +361,13 @@ inline uint64_t operator|(uint64_t m, Reset r) {
     return m | (1ULL << toUType(r));
 }
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_RGU_Type, RESET_CTRL[0]) == 0x100, "RESET_CTRL[0] offset wrong");
 static_assert(offsetof(LPC_RGU_Type, RESET_STATUS[0]) == 0x110, "RESET_STATUS[0] offset wrong");
 static_assert(offsetof(LPC_RGU_Type, RESET_ACTIVE_STATUS[0]) == 0x150, "RESET_ACTIVE_STATUS[0] offset wrong");
 static_assert(offsetof(LPC_RGU_Type, RESET_EXT_STAT[1]) == 0x404, "RESET_EXT_STAT[1] offset wrong");
 static_assert(offsetof(LPC_RGU_Type, RESET_EXT_STAT[60]) == 0x4f0, "RESET_EXT_STAT[60] offset wrong");
+#endif
 
 } /* namespace rgu */
 
@@ -380,12 +386,15 @@ struct SFS {
     }
 };
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_SCU_Type, PINTSEL0) == 0xe00, "PINTSEL0 offset wrong");
+#endif
 
 } /* namespace scu */
 
 namespace sgpio {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_SGPIO_Type, MASK_A) == 0x0200, "SGPIO MASK_A offset wrong");
 static_assert(offsetof(LPC_SGPIO_Type, GPIO_OUTREG) == 0x0214, "SGPIO GPIO_OUTREG offset wrong");
 static_assert(offsetof(LPC_SGPIO_Type, CTRL_DISABLE) == 0x0220, "SGPIO CTRL_DISABLE offset wrong");
@@ -395,24 +404,29 @@ static_assert(offsetof(LPC_SGPIO_Type, CLR_EN_2) == 0x0f40, "SGPIO CLR_EN_2 offs
 static_assert(offsetof(LPC_SGPIO_Type, CLR_EN_3) == 0x0f60, "SGPIO CLR_EN_3 offset wrong");
 static_assert(offsetof(LPC_SGPIO_Type, SET_STATUS_3) == 0x0f74, "SGPIO SET_STATUS_3 offset wrong");
 static_assert(sizeof(LPC_SGPIO_Type) == 0x0f78, "SGPIO type size wrong");
+#endif
 
 } /* namespace sgpio */
 
 namespace gpdma {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_GPDMA_Type, SYNC) == 0x034, "GPDMA SYNC offset wrong");
 static_assert(offsetof(LPC_GPDMA_Type, CH[0]) == 0x100, "GPDMA CH[0] offset wrong");
 static_assert(offsetof(LPC_GPDMA_Type, CH[7]) == 0x1e0, "GPDMA CH[7] offset wrong");
+#endif
 
 } /* namespace gpdma */
 
 namespace sdmmc {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_SDMMC_Type, RESP0) == 0x030, "SDMMC RESP0 offset wrong");
 static_assert(offsetof(LPC_SDMMC_Type, TCBCNT) == 0x05c, "SDMMC TCBCNT offset wrong");
 static_assert(offsetof(LPC_SDMMC_Type, RST_N) == 0x078, "SDMMC RST_N offset wrong");
 static_assert(offsetof(LPC_SDMMC_Type, BMOD) == 0x080, "SDMMC BMOD offset wrong");
 static_assert(offsetof(LPC_SDMMC_Type, DATA) == 0x100, "SDMMC DATA offset wrong");
+#endif
 
 } /* namespace sdmmc */
 
@@ -435,16 +449,20 @@ struct CTRL {
     }
 };
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_SPIFI_Type, STAT) == 0x01c, "SPIFI STAT offset wrong");
+#endif
 
 } /* namespace spifi */
 
 namespace timer {
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_TIMER_Type, MR[0]) == 0x018, "TIMER MR[0] offset wrong");
 static_assert(offsetof(LPC_TIMER_Type, CCR) == 0x028, "TIMER CCR offset wrong");
 static_assert(offsetof(LPC_TIMER_Type, EMR) == 0x03c, "TIMER EMR offset wrong");
 static_assert(offsetof(LPC_TIMER_Type, CTCR) == 0x070, "TIMER CTCR offset wrong");
+#endif
 
 } /* namespace timer */
 
@@ -506,8 +524,10 @@ struct RTC : public RTCTime {
 };
 #endif
 
+#ifndef PORTAPACK_PC_EMULATOR
 static_assert(offsetof(LPC_RTC_Type, CCR) == 0x008, "RTC CCR offset wrong");
 static_assert(offsetof(LPC_RTC_Type, ASEC) == 0x060, "RTC ASEC offset wrong");
+#endif
 
 } /* namespace rtc */
 
